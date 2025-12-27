@@ -30,12 +30,14 @@
         <div id="main-ui" class="ui-layer">
             <div class="top-bar">
                 <div class="gold-info">GOLD: <span class="gold-val">10,000</span> G</div>
-                <div class="scroll-info">보호권: <span id="protect-count">0</span>개</div>
+                <div class="item-status">
+                    <span>📜 보호권: <span id="protect-count">0</span></span> | 
+                    <span>🍀 부적: <span id="charm-count">0</span></span>
+                </div>
             </div>
 
             <div class="bottom-controls">
                 <div id="status-msg" class="hidden">강화 중...</div>
-                
                 <div class="log-window"><div id="log-content">> 대장간에 오신 것을 환영합니다.</div></div>
                 
                 <div class="button-group">
@@ -47,7 +49,6 @@
                             <button id="black-btn" class="branch-btn black">흑날개 진화</button>
                         </div>
                     </div>
-
                     <button id="go-shop-btn" class="btn sub-btn">상점 방문</button>
                 </div>
             </div>
@@ -63,6 +64,11 @@
                         <button onclick="buyItem('protect', 5000)" class="buy-btn">5,000G 구매</button>
                     </div>
                     <div class="item-card">
+                        <span class="icon">🍀</span>
+                        <p>행운의 부적 (+15%)</p>
+                        <button onclick="buyItem('charm', 700)" class="buy-btn charm">700G 구매</button>
+                    </div>
+                    <div class="item-card sale">
                         <span class="icon">💰</span>
                         <p>무기 매각</p>
                         <button onclick="sellSword()" class="sell-btn"><span id="sell-price">0</span>G 판매</button>

@@ -1,170 +1,137 @@
-const swordNames = {
-    0: "철덩이", 1: "녹슨 검", 2: "잘 갈린 검", 3: "단검", 
-    4: "일륜도", 5: "낫", 6: "양날검", 7: "자연의 검", 
-    8: "번개의 검", 9: "우주의 검", 10: "얼음의 검", 
-    11: "용암의 검", 12: "엑스칼리버", 
-    "white13": "백날개의 인도자", "black13": "흑날개의 약탈자",
-    "white14": "순백의 대천사", "black14": "칠흑의 대악마",
-    "white15": "★천상의 성검★", "black15": "★멸망의 마검★",
-    "hidden": "★공허의 눈★"
-};
+const swordNames = { 0: "철덩이", 1: "녹슨 검", 5: "전투용 장검", 10: "빛나는 기사의 검", 12: "운명의 칼날", "white13": "백날개의 인도자", "black13": "흑날개의 약탈자" };
 
-let gold = 10000; // 시작 골드 1만G 설정 완료
+let gold = 10000;
 let level = 0;
 let branch = null;
-let isHidden = false;
 let protectScrolls = 0;
+let isEnhancing = false;
 
-// DOM 캐싱
-const swordImg = document.getElementById('sword-img');
-const bgLayer = document.getElementById('bg-layer');
-const swordNameText = document.getElementById('sword-name');
-const levelTag = document.getElementById('level-tag');
-const goldDisplays = document.querySelectorAll('.gold-val');
-const logContent = document.getElementById('log-content');
-const flashOverlay = document.getElementById('flash-overlay');
-const enhanceBtn = document.getElementById('enhance-btn');
-const branchUI = document.getElementById('branch-ui');
-
-// 경제 밸런스 로직 (강화비 감소 반영)
-function getEconomy(lvl) {
-    // 0~9강까지는 매우 저렴하게, 10강부터 상승
-    let cost = 30 + (lvl * 50); 
-    if (lvl >= 10) cost = 800 + Math.pow(lvl - 9, 2.8) * 200;
-    
-    // 판매가는 레벨에 따라 지수적 상승
-    let price = Math.floor(20 * Math.pow(2.0, (lvl === 0 ? 0 : lvl)));
-    if (branch) price = Math.floor(price * 2);
-    
-    return { cost: Math.floor(cost), price: Math.floor(price) };
+// --- SFX 함수 (사운드 파일 없이 소리 생성) ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq, type, duration, vol) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
 }
 
-function updateUI() {
-    let currentKey = isHidden ? "hidden" : (branch && level >= 13 ? branch + level : level);
-    const { cost, price } = getEconomy(level);
+const sfx = {
+    hammer: () => playSound(150, 'square', 0.2, 0.2), // 깡 (저음 박수형)
+    success: () => { playSound(523, 'sine', 0.5, 0.1); playSound(659, 'sine', 0.6, 0.1); }, // 맑은 화음
+    fail: () => playSound(100, 'sawtooth', 0.4, 0.2) // 파편 소리 (지직)
+};
 
-    // 이미지 파일이 png인지 jpg인지 꼭 확인하세요!
-    if(swordImg) swordImg.src = `images/sword${currentKey}.png`; 
-    if(swordNameText) swordNameText.innerText = swordNames[currentKey] || "미지의 무기";
-    if(levelTag) levelTag.innerText = isHidden ? "HIDDEN" : `+${level}`;
-    
-    goldDisplays.forEach(el => el.innerText = gold.toLocaleString());
-    
-    // 안전한 요소 접근 (ID가 없을 경우 대비)
-    const costEl = document.getElementById('enhance-cost');
-    const priceEl = document.getElementById('sell-price');
-    const protEl = document.getElementById('protect-count');
-    
-    if(costEl) costEl.innerText = cost.toLocaleString();
-    if(priceEl) priceEl.innerText = price.toLocaleString();
-    if(protEl) protEl.innerText = protectScrolls;
-    
-    enhanceBtn.disabled = (gold < cost || level >= 15);
+// --- 핵심 로직 ---
+function updateUI() {
+    const currentKey = branch && level >= 13 ? branch + level : level;
+    document.getElementById('sword-img').src = `images/sword${currentKey}.png`;
+    document.getElementById('sword-name').innerText = swordNames[currentKey] || `검 +${level}`;
+    document.getElementById('level-tag').innerText = `+${level}`;
+    document.querySelectorAll('.gold-val').forEach(el => el.innerText = gold.toLocaleString());
+    document.getElementById('enhance-cost').innerText = (30 + (level * 60)).toLocaleString();
+    document.getElementById('sell-price').innerText = Math.floor(20 * Math.pow(2.0, level)).toLocaleString();
+    document.getElementById('protect-count').innerText = protectScrolls;
 
     if (level === 12 && !branch) {
-        enhanceBtn.classList.add('hidden');
-        branchUI.classList.remove('hidden');
+        document.getElementById('enhance-btn').classList.add('hidden');
+        document.getElementById('branch-ui').classList.remove('hidden');
     } else {
-        enhanceBtn.classList.remove('hidden');
-        branchUI.classList.add('hidden');
+        document.getElementById('enhance-btn').classList.remove('hidden');
+        document.getElementById('branch-ui').classList.add('hidden');
     }
-
-    if (level >= 15) enhanceBtn.innerText = "최종 단계 도달";
 }
 
-function addLog(msg, color = "#ccc") {
-    logContent.innerHTML = `<div style="color: ${color}">> ${msg}</div>` + logContent.innerHTML;
-}
+async function startEnhance() {
+    if (isEnhancing) return;
+    const cost = 30 + (level * 60);
+    if (gold < cost) return alert("골드가 부족합니다!");
 
-function tryEnhance() {
-    const { cost } = getEconomy(level);
-    if (gold < cost) return;
+    isEnhancing = true;
     gold -= cost;
+    updateUI();
 
-    if (level === 14 && Math.random() < 0.001) {
-        isHidden = true; level = 15;
-        addLog("전설을 넘어선 공허의 힘이 깨어났습니다!", "#ff00ff");
-        updateUI(); return;
+    // 연출 시작
+    document.getElementById('enhance-btn').disabled = true;
+    document.getElementById('status-msg').classList.remove('hidden');
+    
+    // 망치질 3번 (깡! 깡! 깡!)
+    for(let i=0; i<3; i++) {
+        await new Promise(r => setTimeout(r, 500));
+        sfx.hammer();
+        document.getElementById('sword-wrapper').style.transform = "translateY(10px)";
+        setTimeout(() => document.getElementById('sword-wrapper').style.transform = "translateY(0)", 100);
     }
 
-    let successRate = Math.max(7, 100 - (level * 8));
-    if (level >= 10) successRate = 20;
-    if (level >= 13) successRate = 10;
-
-    if (Math.random() * 100 < successRate) {
+    await new Promise(r => setTimeout(r, 500));
+    
+    // 결과 판정
+    const success = Math.random() < (level < 10 ? 0.7 : 0.3);
+    
+    if (success) {
         level++;
+        sfx.success();
+        showVFX('success');
         addLog(`강화 성공! (+${level})`, "#f1c40f");
-        showFlash('white');
     } else {
-        showFlash('rgba(255,0,0,0.3)');
+        sfx.fail();
         if (level >= 10) {
             if (protectScrolls > 0) {
                 protectScrolls--;
-                addLog("보호권이 무기를 지켜냈습니다!", "#3498db");
+                addLog("보호권으로 파괴를 면했습니다!");
             } else {
-                level = 0; branch = null; isHidden = false;
-                addLog("무기가 파괴되었습니다!", "#ff4444");
-                document.body.classList.add('shake');
-                setTimeout(()=> document.body.classList.remove('shake'), 300);
+                level = 0; branch = null;
+                showVFX('fail');
+                addLog("무기가 파괴되었습니다...", "#e74c3c");
             }
         } else {
-            addLog("강화 실패. 다행히 무사합니다.");
+            showVFX('fail');
+            addLog("강화 실패!");
         }
     }
+
+    document.getElementById('status-msg').classList.add('hidden');
+    document.getElementById('enhance-btn').disabled = false;
+    isEnhancing = false;
     updateUI();
 }
 
-function showFlash(color) {
-    flashOverlay.style.opacity = '1';
-    flashOverlay.style.backgroundColor = color;
-    setTimeout(()=> flashOverlay.style.opacity = '0', 100);
-}
+function showVFX(type) {
+    const sword = document.getElementById('sword-wrapper');
+    const flash = document.getElementById('flash-overlay');
+    const body = document.getElementById('body');
 
-function chooseBranch(type) {
-    const branchCost = 5000;
-    if (gold < branchCost) return alert("진화 재료비(5,000G)가 부족합니다!");
-
-    if (confirm(`${type === 'white' ? '백날개' : '흑날개'}의 운명을 선택하시겠습니까?`)) {
-        gold -= branchCost;
-        branch = type;
-        level = 13;
-        addLog(`진화 성공! ${swordNames[branch+level]}이(가) 탄생했습니다.`, type === 'white' ? '#fff' : '#a29bfe');
-        updateUI();
+    if (type === 'success') {
+        sword.classList.add('success-anim');
+        flash.style.opacity = "0.8";
+        setTimeout(() => { sword.classList.remove('success-anim'); flash.style.opacity = "0"; }, 500);
+    } else {
+        body.classList.add('fail-shake');
+        sword.classList.add('fail-blink');
+        setTimeout(() => { body.classList.remove('fail-shake'); sword.classList.remove('fail-blink'); }, 500);
     }
 }
 
-// 전역 함수로 설정 (HTML의 onclick에서 호출 가능하게)
-window.buyItem = function(type, price) {
-    if (gold < price) return alert("골드가 부족합니다.");
-    gold -= price;
-    if (type === 'protect') protectScrolls++;
-    addLog("보호권을 구매했습니다.");
+function addLog(msg, color = "#fff") {
+    const log = document.getElementById('log-content');
+    log.innerHTML = `<div style="color:${color}">> ${msg}</div>` + log.innerHTML;
+}
+
+// 상점 및 이벤트 연결
+document.getElementById('enhance-btn').onclick = startEnhance;
+window.buyItem = (t, p) => { if(gold>=p){ gold-=p; if(t==='protect') protectScrolls++; updateUI(); } else alert("골드부족"); };
+window.sellSword = () => { if(level===0)return; gold += Math.floor(20 * Math.pow(2.0, level)); level=0; branch=null; updateUI(); };
+document.getElementById('white-btn').onclick = () => { branch='white'; level=13; updateUI(); };
+document.getElementById('black-btn').onclick = () => { branch='black'; level=13; updateUI(); };
+document.getElementById('go-shop-btn').onclick = () => document.getElementById('shop-ui').classList.remove('hidden');
+document.getElementById('exit-shop-btn').onclick = () => document.getElementById('shop-ui').classList.add('hidden');
+
+window.onload = () => {
     updateUI();
-}
-
-window.sellSword = function() {
-    const { price } = getEconomy(level);
-    if (level === 0) return alert("기본 무기는 팔 수 없습니다.");
-    if (confirm(`${price.toLocaleString()} G에 판매하시겠습니까?`)) {
-        gold += price; level = 0; branch = null; isHidden = false;
-        addLog("무기를 판매했습니다.");
-        updateUI();
-    }
-}
-
-// 이벤트 리스너
-enhanceBtn.addEventListener('click', tryEnhance);
-document.getElementById('white-btn').addEventListener('click', () => chooseBranch('white'));
-document.getElementById('black-btn').addEventListener('click', () => chooseBranch('black'));
-document.getElementById('go-shop-btn').addEventListener('click', () => {
-    document.getElementById('main-ui').classList.add('hidden');
-    document.getElementById('shop-ui').classList.remove('hidden');
-    bgLayer.style.opacity = "0";
-});
-document.getElementById('exit-shop-btn').addEventListener('click', () => {
-    document.getElementById('shop-ui').classList.add('hidden');
-    document.getElementById('main-ui').classList.remove('hidden');
-    bgLayer.style.opacity = "1";
-});
-
-updateUI();
+    setTimeout(() => document.getElementById('loading-spinner').classList.add('fade-out'), 1500);
+};

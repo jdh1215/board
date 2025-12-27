@@ -3,95 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전설의 검 강화: DESTINY</title>
+    <title>DESTINY FORGE : THE ULTIMATE</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Rajdhani:wght@700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body id="body">
+
+    <div id="loading-spinner" class="loading-overlay">
+        <div class="spinner"></div>
+        <p class="loading-text">전설의 대장간을 여는 중...</p>
+    </div>
+
+    <div id="flash-overlay"></div>
 
     <div id="game-viewport">
         <div id="bg-layer" class="background-layer">
-            <div id="flash-overlay"></div>
-            <img id="sword-img" src="images/sword0.png" alt="검 이미지">
+            <div class="sword-display">
+                <div id="sword-wrapper">
+                    <img id="sword-img" src="" alt="무기">
+                </div>
+                <div id="level-tag">+0</div>
+                <h1 id="sword-name">철덩이</h1>
+            </div>
         </div>
 
         <div id="main-ui" class="ui-layer">
-            <div class="top-section">
-                <div class="status-bar">
-                    <div class="gold-info">GOLD: <span class="gold-val">10000</span> G</div>
-                    <div id="level-tag">+0</div>
-                </div>
-                <h1 id="sword-name">철덩이</h1>
-                <div id="item-status">보유 보호권: <span id="protect-count">0</span>개</div>
+            <div class="top-bar">
+                <div class="gold-info">GOLD: <span class="gold-val">10,000</span> G</div>
+                <div class="scroll-info">보호권: <span id="protect-count">0</span>개</div>
             </div>
 
-            <div class="bottom-section">
+            <div class="bottom-controls">
+                <div id="status-msg" class="hidden">강화 중...</div>
+                
                 <div class="log-window"><div id="log-content">> 대장간에 오신 것을 환영합니다.</div></div>
                 
-                <div class="control-panel">
-                    <button id="enhance-btn" class="btn">강화하기 <span class="sub-text">(<span id="enhance-cost">30</span> G)</span></button>
+                <div class="button-group">
+                    <button id="enhance-btn" class="btn main-btn">강화하기 (<span id="enhance-cost">30</span> G)</button>
                     
                     <div id="branch-ui" class="hidden">
-                        <p class="branch-title">운명의 갈림길: 특수 재료를 선택하세요</p>
                         <div class="branch-buttons">
-                            <button id="white-btn" class="branch-btn white-theme">
-                                <span class="material-name">순백의 깃털</span>
-                                <span class="material-desc">백날개의 검으로 진화 (5,000G)</span>
-                            </button>
-                            <button id="black-btn" class="branch-btn black-theme">
-                                <span class="material-name">칠흑의 조각</span>
-                                <span class="material-desc">흑날개의 검으로 진화 (5,000G)</span>
-                            </button>
+                            <button id="white-btn" class="branch-btn white">백날개 진화</button>
+                            <button id="black-btn" class="branch-btn black">흑날개 진화</button>
                         </div>
                     </div>
 
-                    <button id="go-shop-btn" class="btn secondary">상점 방문</button>
+                    <button id="go-shop-btn" class="btn sub-btn">상점 방문</button>
                 </div>
             </div>
         </div>
 
-        <div id="shop-ui" class="ui-layer hidden shop-bg">
+        <div id="shop-ui" class="ui-layer hidden shop-overlay">
             <div class="shop-container">
-                <header class="shop-header">
-                    <div class="shop-title">
-                        <h2>BLACKSMITH SHOP</h2>
-                        <p>강화에 필요한 물건을 사고 무기를 처분하세요.</p>
+                <h2>BLACKSMITH SHOP</h2>
+                <div class="item-grid">
+                    <div class="item-card">
+                        <span class="icon">📜</span>
+                        <p>파괴 방지 주문서</p>
+                        <button onclick="buyItem('protect', 5000)" class="buy-btn">5,000G 구매</button>
                     </div>
-                    <div class="shop-gold-display">
-                        <span class="gold-label">보유 골드</span>
-                        <span class="gold-val">3,000</span> <span class="gold-unit">G</span>
-                    </div>
-                </header>
-
-                <div class="shop-content">
-                    <div class="item-grid">
-                        <div class="item-card">
-                            <div class="item-icon-box">📜</div>
-                            <div class="item-info">
-                                <h3>파괴 방지 주문서</h3>
-                                <p>10강 이상 실패 시 파괴를 1회 막아줍니다.</p>
-                            </div>
-                            <button onclick="buyItem('protect', 1000)" class="shop-action-btn buy">
-                                구매 (12,000 G)
-                            </button>
-                        </div>
-
-                        <div class="item-card">
-                            <div class="item-icon-box">💰</div>
-                            <div class="item-info">
-                                <h3>무기 즉시 판매</h3>
-                                <p>현재 무기를 감정하여 골드로 환전합니다.</p>
-                            </div>
-                            <button onclick="sellSword()" class="shop-action-btn sell">
-                                <span class="price-label">판매가</span>
-                                <span class="price"><span id="sell-price">0</span> G</span>
-                            </button>
-                        </div>
+                    <div class="item-card">
+                        <span class="icon">💰</span>
+                        <p>무기 매각</p>
+                        <button onclick="sellSword()" class="sell-btn"><span id="sell-price">0</span>G 판매</button>
                     </div>
                 </div>
-
-                <footer class="shop-footer">
-                    <button id="exit-shop-btn" class="exit-btn">대장간으로 돌아가기</button>
-                </footer>
+                <button id="exit-shop-btn" class="close-btn">나가기</button>
             </div>
         </div>
     </div>

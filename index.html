@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전설의 검 강화: TWO DESTINIES</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="game-viewport">
+        <div id="bg-layer" class="background-layer">
+            <div id="flash-overlay"></div>
+            <img id="sword-img" src="images/sword0.jpng" alt="검 이미지">
+        </div>
+
+        <div id="main-ui" class="ui-layer">
+            <div class="top-section">
+                <div class="status-bar">
+                    <div class="gold-info">GOLD: <span class="gold-val">3,000</span> G</div>
+                    <div id="level-tag">+0</div>
+                </div>
+                <h1 id="sword-name">철덩이</h1>
+                <div id="item-status">보유 보호권: <span id="protect-count">0</span>개</div>
+            </div>
+
+            <div class="bottom-section">
+                <div class="log-window"><div id="log-content">> 강화 준비 완료.</div></div>
+                
+                <div class="control-panel">
+                    <button id="enhance-btn" class="btn">강화하기 <span class="sub-text">(<span id="enhance-cost">30</span> G)</span></button>
+                    
+                    <div id="branch-ui" class="hidden">
+                        <p class="branch-title">성장의 한계에 도달했습니다. 운명을 선택하십시오.</p>
+                        <div class="branch-buttons">
+                            <button id="white-btn" class="branch-btn white-theme">
+                                <span class="material-name">순백의 깃털</span>
+                                <span class="material-desc">백날개의 검으로 진화</span>
+                            </button>
+                            <button id="black-btn" class="branch-btn black-theme">
+                                <span class="material-name">칠흑의 조각</span>
+                                <span class="material-desc">흑날개의 검으로 진화</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="go-shop-btn" class="btn secondary">상점 방문</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="shop-ui" class="ui-layer hidden shop-bg">
+            <div class="top-section">
+                <div class="status-bar">
+                    <div class="gold-info">GOLD: <span class="gold-val">3,000</span> G</div>
+                </div>
+                <h1>대장장이 상점</h1>
+            </div>
+            <div class="shop-items">
+                <div class="shop-card">
+                    <h3>파괴 방지 주문서</h3>
+                    <button onclick="buyItem('protect', 12000)" class="buy-btn">구매 (12,000 G)</button>
+                </div>
+                <div class="shop-card sell-card">
+                    <h3>무기 판매</h3>
+                    <button onclick="sellSword()" class="sell-btn">판매 (+<span id="sell-price">0</span> G)</button>
+                </div>
+            </div>
+            <div class="bottom-section">
+                <button id="exit-shop-btn" class="btn secondary">대장간으로 돌아가기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
